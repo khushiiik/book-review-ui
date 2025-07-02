@@ -7,6 +7,7 @@ const toast = document.getElementById("toast");
 
 window.onload = fetchBooks;
 
+// Add Book
 bookForm.addEventListener("submit", async (e) => {
   e.preventDefault();
 
@@ -30,9 +31,7 @@ bookForm.addEventListener("submit", async (e) => {
   try {
     const response = await fetch(`${API_BASE}/books`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title, author, published_year }),
     });
 
@@ -40,13 +39,10 @@ bookForm.addEventListener("submit", async (e) => {
 
     if (response.ok) {
       showToast("✅ Book added!");
-      bookForm.reset(); // Clear form
-      titleInput.focus(); // Focus again
-
-      await new Promise((resolve) => setTimeout(resolve, 600)); // Wait for Render backend to catch up
-      await fetchBooks(); // Reload list
-
-      // Scroll to top so user sees the new book
+      bookForm.reset();
+      titleInput.focus();
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      await fetchBooks();
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
       showToast(data.error || "Something went wrong", "error");
@@ -59,6 +55,7 @@ bookForm.addEventListener("submit", async (e) => {
   }
 });
 
+// Fetch Books
 async function fetchBooks() {
   try {
     const res = await fetch(`${API_BASE}/books`);
@@ -74,9 +71,7 @@ async function fetchBooks() {
           <strong>${book.title}</strong> by ${book.author} (${book.published_year || "N/A"})
           <button class="ml-4 text-sm text-blue-600 underline" onclick="toggleReviewSection(${book.id})">💬 View Reviews</button>
         </div>
-        <div id="review-section-${book.id}" class="mt-3 space-y-3 hidden border-t pt-3">
-          <!-- Reviews will be loaded here -->
-        </div>
+        <div id="review-section-${book.id}" class="mt-3 space-y-3 hidden border-t pt-3"></div>
       `;
       bookList.appendChild(li);
     });
@@ -86,6 +81,7 @@ async function fetchBooks() {
   }
 }
 
+// Toggle Review Section
 async function toggleReviewSection(bookId) {
   const section = document.getElementById(`review-section-${bookId}`);
 
@@ -100,13 +96,21 @@ async function toggleReviewSection(bookId) {
 
   try {
     const res = await fetch(`${API_BASE}/books/${bookId}/reviews`);
-    const data = await res.json(); // ✅ fixed
-    const reviews = data.reviews;  // ✅ correct
+    const data = await res.json();
+    const reviews = data.reviews;
 
     let html = `
       <form onsubmit="submitReview(event, ${bookId})" class="space-y-2">
         <input required type="text" id="reviewer-${bookId}" placeholder="Your Name" class="w-full p-2 border rounded" />
         <textarea required id="content-${bookId}" placeholder="Write a review..." class="w-full p-2 border rounded"></textarea>
+        <select required id="rating-${bookId}" class="w-full p-2 border rounded">
+          <option value="" disabled selected>Select Rating</option>
+          <option value="1">⭐ 1</option>
+          <option value="2">⭐⭐ 2</option>
+          <option value="3">⭐⭐⭐ 3</option>
+          <option value="4">⭐⭐⭐⭐ 4</option>
+          <option value="5">⭐⭐⭐⭐⭐ 5</option>
+        </select>
         <button class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">Submit Review</button>
       </form>
       <hr/>
@@ -116,6 +120,7 @@ async function toggleReviewSection(bookId) {
           <div class="bg-white border p-2 rounded relative">
             <strong>${r.reviewer_name}</strong>
             <p>${r.content}</p>
+            <p>⭐ Rating: ${r.rating}</p>
             <div class="absolute top-2 right-2 space-x-2">
               <button onclick="editReview(${r.id}, ${bookId}, '${r.reviewer_name}', '${r.content.replace(/'/g, "\\'")}')">✏️</button>
               <button onclick="deleteReview(${r.id}, ${bookId})">🗑️</button>
@@ -127,12 +132,93 @@ async function toggleReviewSection(bookId) {
 
     section.innerHTML = html;
   } catch (err) {
-    console.error("Error loading reviews:", err); // ✅ debug log
+    console.error("Error loading reviews:", err);
     section.innerHTML = `<p class="text-red-600">Failed to load reviews</p>`;
   }
 }
 
+// Submit Review
+async function submitReview(e, bookId) {
+  e.preventDefault();
 
+  const name = document.getElementById(`reviewer-${bookId}`).value.trim();
+  const content = document.getElementById(`content-${bookId}`).value.trim();
+  const rating = parseInt(document.getElementById(`rating-${bookId}`).value);
+
+  if (!name || !content || isNaN(rating)) {
+    showToast("Please fill in all fields including rating.", "error");
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/books/${bookId}/reviews`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reviewer_name: name, content, rating })
+    });
+
+    if (res.ok) {
+      showToast("✅ Review submitted!");
+      toggleReviewSection(bookId); // hide
+      toggleReviewSection(bookId); // reload
+    } else {
+      showToast("❌ Failed to submit review", "error");
+    }
+  } catch (err) {
+    showToast("❌ Error submitting review", "error");
+    console.error(err);
+  }
+}
+
+// Edit Review
+function editReview(reviewId, bookId, currentName, currentContent) {
+  const reviewer = prompt("Edit reviewer name:", currentName);
+  if (reviewer === null) return;
+
+  const content = prompt("Edit review content:", currentContent);
+  if (content === null) return;
+
+  fetch(`${API_BASE}/reviews/${reviewId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reviewer_name: reviewer.trim(), content: content.trim() })
+  })
+    .then((res) => {
+      if (res.ok) {
+        showToast("✅ Review updated!");
+        toggleReviewSection(bookId); // refresh
+        toggleReviewSection(bookId);
+      } else {
+        showToast("❌ Failed to update review", "error");
+      }
+    })
+    .catch(() => {
+      showToast("❌ Error updating review", "error");
+    });
+}
+
+// Delete Review
+function deleteReview(reviewId, bookId) {
+  if (!confirm("Are you sure you want to delete this review?")) return;
+
+  fetch(`${API_BASE}/reviews/${reviewId}`, {
+    method: "DELETE"
+  })
+    .then((res) => {
+      if (res.ok) {
+        showToast("🗑️ Review deleted");
+        toggleReviewSection(bookId); // refresh
+        toggleReviewSection(bookId);
+      } else {
+        showToast("❌ Failed to delete review", "error");
+      }
+    })
+    .catch(() => {
+      showToast("❌ Error deleting review", "error");
+    });
+}
+
+// Search Books
 searchInput.addEventListener("input", () => {
   const keyword = searchInput.value.toLowerCase();
   const items = Array.from(bookList.children);
@@ -151,12 +237,12 @@ searchInput.addEventListener("input", () => {
     }
   });
 
-  // Reorder DOM: matched books on top
   bookList.innerHTML = "";
   matching.forEach((item) => bookList.appendChild(item));
   nonMatching.forEach((item) => bookList.appendChild(item));
 });
 
+// Toast Feedback
 function showToast(message, type = "success") {
   toast.textContent = message;
   toast.className =
@@ -168,81 +254,4 @@ function showToast(message, type = "success") {
   setTimeout(() => {
     toast.classList.add("hidden");
   }, 3000);
-}
-
-async function submitReview(e, bookId) {
-  e.preventDefault();
-  const name = document.getElementById(`reviewer-${bookId}`).value.trim();
-  const content = document.getElementById(`content-${bookId}`).value.trim();
-
-  if (!name || !content) {
-    showToast("Please fill in both name and review.", "error");
-    return;
-  }
-
-  try {
-    const res = await fetch(`${API_BASE}/books/${bookId}/reviews`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ reviewer_name: name, content })
-    });
-
-    if (res.ok) {
-      showToast("✅ Review submitted!");
-      toggleReviewSection(bookId); // hide
-      toggleReviewSection(bookId); // re-show refreshed
-    } else {
-      showToast("Failed to submit review", "error");
-    }
-  } catch (err) {
-    showToast("Error submitting review", "error");
-  }
-}
-
-function editReview(reviewId, bookId, currentName, currentContent) {
-  const reviewer = prompt("Edit reviewer name:", currentName);
-  if (reviewer === null) return;
-
-  const content = prompt("Edit review content:", currentContent);
-  if (content === null) return;
-
-  fetch(`${API_BASE}/reviews/${reviewId}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ reviewer_name: reviewer.trim(), content: content.trim() })
-  })
-    .then((res) => {
-      if (res.ok) {
-        showToast("✅ Review updated!");
-        toggleReviewSection(bookId); // hide
-        toggleReviewSection(bookId); // refresh
-      } else {
-        showToast("❌ Failed to update review", "error");
-      }
-    })
-    .catch(() => {
-      showToast("❌ Error updating review", "error");
-    });
-}
-
-function deleteReview(reviewId, bookId) {
-  if (!confirm("Are you sure you want to delete this review?")) return;
-
-  fetch(`${API_BASE}/reviews/${reviewId}`, {
-    method: "DELETE"
-  })
-    .then((res) => {
-      if (res.ok) {
-        showToast("🗑️ Review deleted");
-        toggleReviewSection(bookId); // hide
-        toggleReviewSection(bookId); // refresh
-      } else {
-        showToast("❌ Failed to delete review", "error");
-      }
-    })
-    .catch(() => {
-      showToast("❌ Error deleting review", "error");
-    });
 }
