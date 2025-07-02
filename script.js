@@ -1,23 +1,27 @@
-const API_BASE = "https://book-review-api-xch1.onrender.com"; // your live API
+const API_BASE = "https://book-review-api-xch1.onrender.com";
 
 const bookForm = document.getElementById("bookForm");
 const bookList = document.getElementById("bookList");
+const searchInput = document.getElementById("searchInput");
+const toast = document.getElementById("toast");
 
-// Fetch and display all books on page load
 window.onload = fetchBooks;
 
-// Handle form submission to add a new book
 bookForm.addEventListener("submit", async (e) => {
-  e.preventDefault(); // prevent page reload
+  e.preventDefault();
 
   const title = document.getElementById("title").value.trim();
   const author = document.getElementById("author").value.trim();
   const published_year = document.getElementById("year").value;
+  const submitBtn = bookForm.querySelector("button");
 
   if (!title || !author) {
-    alert("Title and author are required!");
+    showToast("Please enter both title and author.", "error");
     return;
   }
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Adding...";
 
   try {
     const response = await fetch(`${API_BASE}/books`, {
@@ -31,34 +35,66 @@ bookForm.addEventListener("submit", async (e) => {
     const data = await response.json();
 
     if (response.ok) {
-      alert("Book added successfully!");
+      showToast("Book added successfully!");
       bookForm.reset();
-      fetchBooks(); // refresh the list
+      document.getElementById("title").focus(); // Autofocus
+      fetchBooks(); // Refresh list
     } else {
-      alert(data.error || "Something went wrong");
+      showToast(data.error || "Something went wrong", "error");
     }
   } catch (error) {
-    alert("Failed to add book: " + error);
+    showToast("Failed to add book: " + error.message, "error");
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Add Book";
   }
 });
 
-// Fetch books from the API
 async function fetchBooks() {
   try {
     const res = await fetch(`${API_BASE}/books`);
     const books = await res.json();
 
-    bookList.innerHTML = ""; // clear old list
+    bookList.innerHTML = "";
 
-    books.forEach((book) => {
+    // Show latest books first
+    books.reverse().forEach((book) => {
       const li = document.createElement("li");
       li.className = "p-3 border rounded bg-gray-50 shadow";
-      li.innerHTML = `
-        <strong>${book.title}</strong> by ${book.author} (${book.published_year || "N/A"})
-      `;
+      li.innerHTML = `<strong>${book.title}</strong> by ${book.author} (${book.published_year || "N/A"})`;
       bookList.appendChild(li);
     });
   } catch (error) {
     bookList.innerHTML = `<li class="text-red-600">Failed to load books</li>`;
   }
+}
+
+searchInput.addEventListener("input", () => {
+  const keyword = searchInput.value.toLowerCase();
+  const items = Array.from(bookList.children);
+
+  items.forEach((item) => {
+    const text = item.textContent.toLowerCase();
+    item.style.display = text.includes(keyword) ? "block" : "none";
+  });
+
+  const matching = items.filter((item) => item.style.display === "block");
+  const nonMatching = items.filter((item) => item.style.display === "none");
+
+  bookList.innerHTML = "";
+  matching.forEach((item) => bookList.appendChild(item));
+  nonMatching.forEach((item) => bookList.appendChild(item));
+});
+
+function showToast(message, type = "success") {
+  toast.textContent = message;
+  toast.className =
+    "fixed bottom-4 right-4 px-4 py-2 rounded shadow-lg z-50 transition-opacity duration-300 " +
+    (type === "error" ? "bg-red-600" : "bg-green-600") +
+    " text-white";
+  toast.classList.remove("hidden");
+
+  setTimeout(() => {
+    toast.classList.add("hidden");
+  }, 3000);
 }
