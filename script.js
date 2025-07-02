@@ -100,7 +100,9 @@ async function toggleReviewSection(bookId) {
 
   try {
     const res = await fetch(`${API_BASE}/books/${bookId}/reviews`);
-    const reviews = await res.json();
+    const data = await res.json();
+    const reviews = data.reviews;
+
 
     let html = `
       <form onsubmit="submitReview(event, ${bookId})" class="space-y-2">
