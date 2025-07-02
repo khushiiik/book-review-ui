@@ -100,9 +100,8 @@ async function toggleReviewSection(bookId) {
 
   try {
     const res = await fetch(`${API_BASE}/books/${bookId}/reviews`);
-    const data = await res.json();
-    const reviews = data.reviews;
-
+    const data = await res.json(); // ✅ fixed
+    const reviews = data.reviews;  // ✅ correct
 
     let html = `
       <form onsubmit="submitReview(event, ${bookId})" class="space-y-2">
@@ -128,9 +127,11 @@ async function toggleReviewSection(bookId) {
 
     section.innerHTML = html;
   } catch (err) {
+    console.error("Error loading reviews:", err); // ✅ debug log
     section.innerHTML = `<p class="text-red-600">Failed to load reviews</p>`;
   }
 }
+
 
 searchInput.addEventListener("input", () => {
   const keyword = searchInput.value.toLowerCase();
