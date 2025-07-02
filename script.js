@@ -55,29 +55,27 @@ bookForm.addEventListener("submit", async (e) => {
 });
 
 
-books.reverse().forEach((book) => {
-  const li = document.createElement("li");
-  li.className = "p-3 border rounded bg-gray-50 shadow";
-  li.innerHTML = `<strong>${book.title}</strong> by ${book.author} (${book.published_year || "N/A"})`;
-  bookList.appendChild(li);
-});
+async function fetchBooks() {
+  try {
+    const res = await fetch(`${API_BASE}/books`);
+    const books = await res.json();
 
-searchInput.addEventListener("input", () => {
-  const keyword = searchInput.value.toLowerCase();
-  const items = Array.from(bookList.children);
+    console.log("Fetched books:", books); // for debugging
 
-  items.forEach((item) => {
-    const text = item.textContent.toLowerCase();
-    item.style.display = text.includes(keyword) ? "block" : "none";
-  });
+    bookList.innerHTML = ""; // Clear old list
 
-  const matching = items.filter((item) => item.style.display === "block");
-  const nonMatching = items.filter((item) => item.style.display === "none");
+    books.reverse().forEach((book) => {
+      const li = document.createElement("li");
+      li.className = "p-3 border rounded bg-gray-50 shadow";
+      li.innerHTML = `<strong>${book.title}</strong> by ${book.author} (${book.published_year || "N/A"})`;
+      bookList.appendChild(li);
+    });
+  } catch (error) {
+    console.error("Error fetching books:", error);
+    bookList.innerHTML = `<li class="text-red-600">Failed to load books</li>`;
+  }
+}
 
-  bookList.innerHTML = "";
-  matching.forEach((item) => bookList.appendChild(item));
-  nonMatching.forEach((item) => bookList.appendChild(item));
-});
 
 function showToast(message, type = "success") {
   toast.textContent = message;
