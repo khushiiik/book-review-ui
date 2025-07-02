@@ -122,7 +122,6 @@ async function toggleReviewSection(bookId) {
             <p>${r.content}</p>
             <p>⭐ Rating: ${r.rating}</p>
             <div class="absolute top-2 right-2 space-x-2">
-              <button onclick="editReview(${r.id}, ${bookId}, '${r.reviewer_name}', '${r.content.replace(/'/g, "\\'")}')">✏️</button>
               <button onclick="deleteReview(${r.id}, ${bookId})">🗑️</button>
             </div>
           </div>
@@ -170,32 +169,6 @@ async function submitReview(e, bookId) {
   }
 }
 
-// Edit Review
-function editReview(reviewId, bookId, currentName, currentContent) {
-  const reviewer = prompt("Edit reviewer name:", currentName);
-  if (reviewer === null) return;
-
-  const content = prompt("Edit review content:", currentContent);
-  if (content === null) return;
-
-  fetch(`${API_BASE}/reviews/${reviewId}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ reviewer_name: reviewer.trim(), content: content.trim() })
-  })
-    .then((res) => {
-      if (res.ok) {
-        showToast("✅ Review updated!");
-        toggleReviewSection(bookId); // refresh
-        toggleReviewSection(bookId);
-      } else {
-        showToast("❌ Failed to update review", "error");
-      }
-    })
-    .catch(() => {
-      showToast("❌ Error updating review", "error");
-    });
-}
 
 // Delete Review
 function deleteReview(reviewId, bookId) {
