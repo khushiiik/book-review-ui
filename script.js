@@ -36,9 +36,12 @@ bookForm.addEventListener("submit", async (e) => {
 
     if (response.ok) {
       showToast("Book added successfully!");
+
       bookForm.reset();
-      document.getElementById("title").focus(); // Autofocus
-      fetchBooks(); // Refresh list
+
+      document.getElementById("title").focus();
+
+      await fetchBooks();
     } else {
       showToast(data.error || "Something went wrong", "error");
     }
@@ -49,6 +52,7 @@ bookForm.addEventListener("submit", async (e) => {
     submitBtn.textContent = "Add Book";
   }
 });
+
 
 async function fetchBooks() {
   try {
