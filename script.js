@@ -10,9 +10,13 @@ window.onload = fetchBooks;
 bookForm.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const title = document.getElementById("title").value.trim();
-  const author = document.getElementById("author").value.trim();
-  const published_year = document.getElementById("year").value;
+  const titleInput = document.getElementById("title");
+  const authorInput = document.getElementById("author");
+  const yearInput = document.getElementById("year");
+
+  const title = titleInput.value.trim();
+  const author = authorInput.value.trim();
+  const published_year = yearInput.value.trim();
   const submitBtn = bookForm.querySelector("button");
 
   if (!title || !author) {
@@ -36,13 +40,14 @@ bookForm.addEventListener("submit", async (e) => {
 
     if (response.ok) {
       showToast("✅ Book added!");
-      bookForm.reset();
-      document.getElementById("title").focus();
+      bookForm.reset(); // Clear form
+      titleInput.focus(); // Focus again
 
-      // ✅ Add slight delay to let backend catch up
-      setTimeout(() => {
-        fetchBooks(); // Refresh list
-      }, 500); // 500ms delay
+      await new Promise((resolve) => setTimeout(resolve, 600)); // Wait for Render backend to catch up
+      await fetchBooks(); // Reload list
+
+      // Scroll to top so user sees the new book
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
       showToast(data.error || "Something went wrong", "error");
     }
@@ -54,15 +59,14 @@ bookForm.addEventListener("submit", async (e) => {
   }
 });
 
-
 async function fetchBooks() {
   try {
     const res = await fetch(`${API_BASE}/books`);
     const books = await res.json();
 
-    console.log("Fetched books:", books); // for debugging
+    console.log("Fetched books:", books);
 
-    bookList.innerHTML = ""; // Clear old list
+    bookList.innerHTML = "";
 
     books.reverse().forEach((book) => {
       const li = document.createElement("li");
@@ -75,7 +79,6 @@ async function fetchBooks() {
     bookList.innerHTML = `<li class="text-red-600">Failed to load books</li>`;
   }
 }
-
 
 function showToast(message, type = "success") {
   toast.textContent = message;
