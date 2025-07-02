@@ -195,3 +195,51 @@ async function submitReview(e, bookId) {
     showToast("Error submitting review", "error");
   }
 }
+
+function editReview(reviewId, bookId, currentName, currentContent) {
+  const reviewer = prompt("Edit reviewer name:", currentName);
+  if (reviewer === null) return;
+
+  const content = prompt("Edit review content:", currentContent);
+  if (content === null) return;
+
+  fetch(`${API_BASE}/reviews/${reviewId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ reviewer_name: reviewer.trim(), content: content.trim() })
+  })
+    .then((res) => {
+      if (res.ok) {
+        showToast("✅ Review updated!");
+        toggleReviewSection(bookId); // hide
+        toggleReviewSection(bookId); // refresh
+      } else {
+        showToast("❌ Failed to update review", "error");
+      }
+    })
+    .catch(() => {
+      showToast("❌ Error updating review", "error");
+    });
+}
+
+function deleteReview(reviewId, bookId) {
+  if (!confirm("Are you sure you want to delete this review?")) return;
+
+  fetch(`${API_BASE}/reviews/${reviewId}`, {
+    method: "DELETE"
+  })
+    .then((res) => {
+      if (res.ok) {
+        showToast("🗑️ Review deleted");
+        toggleReviewSection(bookId); // hide
+        toggleReviewSection(bookId); // refresh
+      } else {
+        showToast("❌ Failed to delete review", "error");
+      }
+    })
+    .catch(() => {
+      showToast("❌ Error deleting review", "error");
+    });
+}
