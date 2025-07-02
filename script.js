@@ -80,6 +80,30 @@ async function fetchBooks() {
   }
 }
 
+searchInput.addEventListener("input", () => {
+  const keyword = searchInput.value.toLowerCase();
+  const items = Array.from(bookList.children);
+
+  const matching = [];
+  const nonMatching = [];
+
+  items.forEach((item) => {
+    const text = item.textContent.toLowerCase();
+    if (text.includes(keyword)) {
+      matching.push(item);
+      item.style.display = "block";
+    } else {
+      nonMatching.push(item);
+      item.style.display = "none";
+    }
+  });
+
+  // Reorder DOM: matched books on top
+  bookList.innerHTML = "";
+  matching.forEach((item) => bookList.appendChild(item));
+  nonMatching.forEach((item) => bookList.appendChild(item));
+});
+
 function showToast(message, type = "success") {
   toast.textContent = message;
   toast.className =
