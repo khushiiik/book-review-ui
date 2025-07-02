@@ -35,13 +35,14 @@ bookForm.addEventListener("submit", async (e) => {
     const data = await response.json();
 
     if (response.ok) {
-      showToast("Book added successfully!");
-
+      showToast("✅ Book added!");
       bookForm.reset();
-
       document.getElementById("title").focus();
 
-      await fetchBooks();
+      // ✅ Add slight delay to let backend catch up
+      setTimeout(() => {
+        fetchBooks(); // Refresh list
+      }, 500); // 500ms delay
     } else {
       showToast(data.error || "Something went wrong", "error");
     }
@@ -54,24 +55,12 @@ bookForm.addEventListener("submit", async (e) => {
 });
 
 
-async function fetchBooks() {
-  try {
-    const res = await fetch(`${API_BASE}/books`);
-    const books = await res.json();
-
-    bookList.innerHTML = "";
-
-    // Show latest books first
-    books.reverse().forEach((book) => {
-      const li = document.createElement("li");
-      li.className = "p-3 border rounded bg-gray-50 shadow";
-      li.innerHTML = `<strong>${book.title}</strong> by ${book.author} (${book.published_year || "N/A"})`;
-      bookList.appendChild(li);
-    });
-  } catch (error) {
-    bookList.innerHTML = `<li class="text-red-600">Failed to load books</li>`;
-  }
-}
+books.reverse().forEach((book) => {
+  const li = document.createElement("li");
+  li.className = "p-3 border rounded bg-gray-50 shadow";
+  li.innerHTML = `<strong>${book.title}</strong> by ${book.author} (${book.published_year || "N/A"})`;
+  bookList.appendChild(li);
+});
 
 searchInput.addEventListener("input", () => {
   const keyword = searchInput.value.toLowerCase();
